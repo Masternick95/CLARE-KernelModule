@@ -22,15 +22,15 @@ MODULE_LICENSE("GPL v2");
 
 /* ----------------------------------------------------------------------------- */
 
-#define HYPERCALL_ID				(0x8600F005)
+#define HYPERCALL_ID			(0x8600F005)
 
 /* ----------------------------------------------------------------------------- */
 
-#define MAX_NUM_OF_PORTS			(32)
-#define PORT_NULL_ID				(255)
-#define PORT_PATH_SIZE				(32)
-#define PORT_NAME_SIZE				(32)
-#define PORT_DEV_NAME_SIZE			(PORT_PATH_SIZE + PORT_NAME_SIZE + 1)
+#define MAX_NUM_OF_PORTS		(32)
+#define PORT_NULL_ID			(255)
+#define PORT_PATH_SIZE			(32)
+#define PORT_NAME_SIZE			(32)
+#define PORT_DEV_NAME_SIZE		(PORT_PATH_SIZE + PORT_NAME_SIZE + 1)
 
 /* ----------------------------------------------------------------------------- */
 
@@ -136,23 +136,25 @@ static struct clare_ports queuing_ports = {
 /* ----------------------------------------------------------------------------- */
 
 static inline enum hyp_api_result hyp_call(enum hyp_vm_comm_ops op,
-									void* mailbox_addr, u64 mailbox_size)
+						void* mailbox_addr,
+						u64 mailbox_size)
 {
 	struct arm_smccc_res hvc_res;
 
 	arm_smccc_hvc(HYPERCALL_ID, op, (u64) mailbox_addr, mailbox_size,
-					0, 0, 0, 0, &hvc_res);
+			0, 0, 0, 0, &hvc_res);
 
 	return (enum hyp_api_result) hvc_res.a0;
 }
 
 static inline enum hyp_api_result hyp_call_id(enum hyp_vm_comm_ops op,
-							void* mailbox_addr, u64 mailbox_size, u64 port_id)
+						void* mailbox_addr,
+						u64 mailbox_size, u64 port_id)
 {
 	struct arm_smccc_res hvc_res;
 
 	arm_smccc_hvc(HYPERCALL_ID, op, (u64) mailbox_addr, mailbox_size,
-					port_id, 0, 0, 0, &hvc_res);
+			port_id, 0, 0, 0, &hvc_res);
 
 	return (enum hyp_api_result) hvc_res.a0;
 }
@@ -170,7 +172,7 @@ static int port_cdev_close(struct inode *inode, struct file *file)
 }
 
 static ssize_t port_cdev_read(struct file *file, char __user *ubuf,
-							size_t count, loff_t *off)
+				size_t count, loff_t *off)
 {
 	char *kbuf;
 	struct clare_port *port;
@@ -204,8 +206,8 @@ static ssize_t port_cdev_read(struct file *file, char __user *ubuf,
 		break;
 	default:
 		dev_err(port->misc_cdev.this_device,
-				"clare ports: %s port read: error %d on copy from clare\n",
-				port->name, hyp_retval);
+			"clare ports: %s port read: error %d on hyp to clare\n",
+			port->name, hyp_retval);
 		retval = -EIO;
 		goto out_free_unlock;
 		break;
@@ -214,8 +216,8 @@ static ssize_t port_cdev_read(struct file *file, char __user *ubuf,
 	kern_retval = copy_to_user(ubuf, kbuf, count);
 	if (kern_retval != 0) {
 		dev_err(port->misc_cdev.this_device,
-				"clare ports: %s port read: error on copy to user\n",
-				port->name);
+			"clare ports: %s port read: error on copy to user\n",
+			port->name);
 		retval = -EFAULT;
 		goto out_free_unlock;
 	}
@@ -229,7 +231,7 @@ out:
 }
 
 static ssize_t port_cdev_write(struct file *file, const char __user *ubuf,
-							size_t count, loff_t *off)
+				size_t count, loff_t *off)
 {
 	char *kbuf;
 	struct clare_port *port;
@@ -248,7 +250,7 @@ static ssize_t port_cdev_write(struct file *file, const char __user *ubuf,
 	kbuf = kzalloc(count, GFP_USER);
 	if (kbuf == NULL) {
 		dev_err(port->misc_cdev.this_device,
-				"clare ports: write: unable to allocate mem\n");
+			"clare ports: write: unable to allocate mem\n");
 		retval = -ENOMEM;
 		goto out_unlock;
 	}
@@ -256,7 +258,7 @@ static ssize_t port_cdev_write(struct file *file, const char __user *ubuf,
 	kern_retval = copy_from_user(kbuf, ubuf, count);
 	if (kern_retval != 0) {
 		dev_err(port->misc_cdev.this_device,
-				"clare ports: write: error on copy from user\n");
+			"clare ports: write: error on copy from user\n");
 		retval = -EFAULT;
 		goto out_free_unlock;
 	}
@@ -271,8 +273,8 @@ static ssize_t port_cdev_write(struct file *file, const char __user *ubuf,
 		break;
 	default:
 		dev_err(port->misc_cdev.this_device,
-				"clare ports: %s port write: error %d on copy to clare\n",
-				port->name, hyp_retval);
+			"clare ports: %s port write: error %d on hyp to clare\n",
+			port->name, hyp_retval);
 		retval = -EIO;
 		goto out_free_unlock;
 		break;
@@ -323,10 +325,10 @@ static int ports_init(struct clare_ports *ports)
 
 	/* Get number of ports */
 	hyp_retval = hyp_call(ports->hyp_ops.get_how_many, &ports->num_ports,
-						sizeof (ports->num_ports));
+				sizeof (ports->num_ports));
 	if (hyp_retval != P_OK) {
 		pr_err("clare ports: error %d while initializing %s ports env.\n",
-				hyp_retval, ports->class_name);
+			hyp_retval, ports->class_name);
 		retval = -EIO;
 		goto out;
 	}
@@ -336,7 +338,7 @@ static int ports_init(struct clare_ports *ports)
 		
 		/* Initialize ports array */
 		ports->ports_array[i] = kzalloc(sizeof (*ports->ports_array[i]),
-									GFP_USER);
+						GFP_USER);
 		if (ports->ports_array[i] == NULL) {
 			pr_err("clare ports: cannot allocate memory.\n");
 			retval = -ENOMEM;
@@ -348,9 +350,11 @@ static int ports_init(struct clare_ports *ports)
 
 		/* Get port id */
 		hyp_retval = hyp_call_id(ports->hyp_ops.get_ext_id,
-								&ports->ports_array[i]->id, sizeof (u64), i);
+					&ports->ports_array[i]->id,
+					sizeof (u64), i);
 		if (hyp_retval != P_OK) {
-			pr_err("clare ports: error %d while get %s port %llu ext id.\n",
+			pr_err("clare ports: error %d while get"
+				" %s port %llu ext id.\n",
 				hyp_retval, ports->class_name, i);
 			retval = -EIO;
 			goto out_clean;
@@ -358,27 +362,34 @@ static int ports_init(struct clare_ports *ports)
 
 		/* Get port name */
 		hyp_retval = hyp_call_id(ports->hyp_ops.get_name,
-								ports->ports_array[i]->name, PORT_NAME_SIZE,
-								ports->ports_array[i]->id);
+					ports->ports_array[i]->name,
+					PORT_NAME_SIZE,
+					ports->ports_array[i]->id);
 		if (hyp_retval != P_OK) {
-			pr_err("clare ports: error %d while get %s port %llu name.\n",
+			pr_err("clare ports: error %d while get"
+				" %s port %llu name.\n",
 				hyp_retval, ports->class_name, i);
 			retval = -EIO;
 			goto out_clean;
 		}
 
 		snprintf(ports->ports_array[i]->dev_name,
-				sizeof (ports->ports_array[i]->dev_name),
-				"%s%s", ports->dev_base_name, ports->ports_array[i]->name);
+			sizeof (ports->ports_array[i]->dev_name),
+			"%s%s", ports->dev_base_name,
+			ports->ports_array[i]->name);
 		
 		/* Init port dev */
-		ports->ports_array[i]->misc_cdev.minor = MISC_DYNAMIC_MINOR;
-		ports->ports_array[i]->misc_cdev.name = ports->ports_array[i]->dev_name;
-		ports->ports_array[i]->misc_cdev.fops = &port_cdev_fops;
+		ports->ports_array[i]->misc_cdev.minor = 
+						MISC_DYNAMIC_MINOR;
+		ports->ports_array[i]->misc_cdev.name =
+						ports->ports_array[i]->dev_name;
+		ports->ports_array[i]->misc_cdev.fops = 
+						&port_cdev_fops;
 
 		retval = misc_register(&ports->ports_array[i]->misc_cdev);
 		if (retval < 0) {
-			pr_err("clare ports: cannot register %s port %llu device.\n", 
+			pr_err("clare ports: cannot register"
+				" %s port %llu device.\n",
 				ports->class_name, i);
 			goto out_clean;
 		}
@@ -406,7 +417,7 @@ static int __init clare_ports_mod_init(void)
 		return retval;
 
 	pr_info("clare ports: %llu %s ports initialized\n",
-			sampling_ports.num_ports, sampling_ports.class_name);
+		sampling_ports.num_ports, sampling_ports.class_name);
 
 	retval = ports_init(&queuing_ports);
 	if (retval != 0) {
@@ -415,7 +426,7 @@ static int __init clare_ports_mod_init(void)
 	}
 
 	pr_info("clare ports: %llu %s ports initialized\n",
-			queuing_ports.num_ports, queuing_ports.class_name);
+		queuing_ports.num_ports, queuing_ports.class_name);
 	
 	return 0;
 }
